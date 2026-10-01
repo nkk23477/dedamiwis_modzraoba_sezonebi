@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<title>დედამიწის მოძრაობა მზის გარშემო — სეზონები</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: radial-gradient(ellipse at center, #0a0e27 0%, #000 100%);
+    color: #e8eaf6;
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    margin-bottom: 10px;
+    color: #ffd54f;
+    text-shadow: 0 0 15px rgba(255, 213, 79, 0.5);
+  }
+  .container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    max-width: 1200px;
+    width: 100%;
+    justify-content: center;
+  }
+  canvas {
+    background: radial-gradient(ellipse at center, #0d1b3d 0%, #000 100%);
+    border: 2px solid #1e3a8a;
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(30, 58, 138, 0.5);
+  }
+  .panel {
+    background: rgba(20, 30, 60, 0.85);
+    border: 1px solid #3b5bdb;
+    border-radius: 12px;
+    padding: 20px;
+    min-width: 320px;
+    max-width: 400px;
+    backdrop-filter: blur(10px);
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px dashed #3b5bdb55;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .label { color: #90caf9; }
+  .value { color: #ffd54f; font-weight: bold; }
+  .season-title {
+    font-size: 22px;
+    text-align: center;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #1e3a8a, #3b5bdb);
+  }
+  .description {
+    margin-top: 15px;
+    line-height: 1.6;
+    font-size: 14px;
+    color: #cfd8dc;
+    text-align: justify;
+  }
+  .slider-wrap {
+    margin: 15px 0;
+    width: 100%;
+  }
+  input[type=range] {
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, #4caf50, #ffeb3b, #ff9800, #2196f3);
+    border-radius: 5px;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    background: #ffd54f;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px #ffd54f;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 22px; height: 22px;
+    background: #ffd54f;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
+  .months {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #90caf9;
+    margin-top: 5px;
+  }
+  .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+  button {
+    flex: 1;
+    padding: 8px;
+    background: #3b5bdb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.2s;
+  }
+  button:hover { background: #5c7cfa; }
+  .legend {
+    font-size: 12px;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #3b5bdb55;
+    color: #b0bec5;
+  }
+  .legend div { margin: 3px 0; }
+  .dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<h1>🌍 დედამიწის მოძრაობა მზის გარშემო — სეზონების წარმოშობა</h1>
+
+<div class="container">
+  <canvas id="space" width="600" height="600"></canvas>
+
+  <div class="panel">
+    <div class="season-title" id="seasonTitle">გაზაფხული</div>
+
+    <div class="slider-wrap">
+      <label>თვე: <strong id="monthLabel">მარტი</strong></label>
+      <input type="range" id="monthSlider" min="0" max="11" step="0.05" value="2">
+      <div class="months">
+        <span>ია</span><span>თებ</span><span>მარ</span><span>აპრ</span>
+        <span>მაი</span><span>ივნ</span><span>ივლ</span><span>აგვ</span>
+        <span>სექ</span><span>ოქტ</span><span>ნოე</span><span>დეკ</span>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button id="playBtn">▶ ანიმაცია</button>
+      <button id="resetBtn">↺ თავიდან</button>
+    </div>
+
+    <div style="margin-top:15px;">
+      <div class="info-row"><span class="label">ორბიტაზე პოზიცია:</span><span class="value" id="posVal">0°</span></div>
+      <div class="info-row"><span class="label">მზის სხივის კუთხე (ჩრდ. ნახ.):</span><span class="value" id="angleVal">—</span></div>
+      <div class="info-row"><span class="label">ღერძის დახრილობა:</span><span class="value">23.5°</span></div>
+      <div class="info-row"><span class="label">ჩრდ. ნახევარსფერო:</span><span class="value" id="northSeason">—</span></div>
+      <div class="info-row"><span class="label">სამხ. ნახევარსფერო:</span><span class="value" id="southSeason">—</span></div>
+    </div>
+
+    <div class="description" id="desc">
+      დედამიწის ღერძი დახრილია 23.5°-ით ორბიტის სიბრტყის მიმართ. ეს დახრილობა მუდმივია სივრცეში — ღერძი ყოველთვის პოლარისისკენაა მიმართული. ამიტომ, ორბიტაზე მოძრაობისას სხვადასხვა ნახევარსფერო უფრო მეტ მზის სხივს იღებს, რაც სეზონებს ქმნის.
+    </div>
+
+    <div class="legend">
+      <div><span class="dot" style="background:#ffd54f"></span>მზე</div>
+      <div><span class="dot" style="background:#4fc3f7"></span>დედამიწა (ღერძით)</div>
+      <div><span class="dot" style="background:#ffeb3b"></span>მზის სხივები</div>
+      <div><span class="dot" style="background:#ff5252"></span>პირდაპირი დაცემა (სიცხე)</div>
+      <div><span class="dot" style="background:#7986cb"></span>დახრილი დაცემა (სიცივე)</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('space');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const cx = W/2, cy = H/2;
+
+const months = ['იანვარი','თებერვალი','მარტი','აპრილი','მაისი','ივნისი',
+                'ივლისი','აგვისტო','სექტემბერი','ოქტომბერი','ნოემბერი','დეკემბერი'];
+
+const seasonInfo = {
+  spring: {name:'გაზაფხული 🌱', color:'#66bb6a',
+    desc:'მარტის ბუნიაობა (≈21 მარტი) — მზე ეკვატორს პირდაპირ ასხივებს. ჩრდილოეთი ნახევარსფერო იწყებს მეტი სხივის მიღებას. დღე და ღამე თანაბარია.'},
+  summer: {name:'ზაფხული ☀️', color:'#ffa726',
+    desc:'ივნისის ბუნიაობა (≈21 ივნისი) — ჩრდილოეთი ნახევარსფერო მაქსიმალურად მიმართულია მზისკენ. მზე ყველაზე მაღლა დგას, სხივები თითქმის პირდაპირ ეცემა. ყველაზე გრძელი დღე.'},
+  autumn: {name:'შემოდგომა 🍂', color:'#ef5350',
+    desc:'სექტემბრის ბუნიაობა (≈23 სექტ.) — მზე კვლავ ეკვატორზეა. ჩრდილოეთი ნახევარსფერო ნელ-ნელა შორდება მზის სხივებს, დღე მოკლდება.'},
+  winter: {name:'ზამთარი ❄️', color:'#42a5f5',
+    desc:'დეკემბრის ბუნიაობა (≈21 დეკ.) — ჩრდილოეთი ნახევარსფერო მაქსიმალურად შორსაა მზისგან. სხივები დიდი კუთხით ეცემა, ენერგია იფანტება. ყველაზე მოკლე დღე.'}
+};
+
+const slider = document.getElementById('monthSlider');
+const monthLabel = document.getElementById('monthLabel');
+const seasonTitle = document.getElementById('seasonTitle');
+const posVal = document.getElementById('posVal');
+const angleVal = document.getElementById('angleVal');
+const northSeason = document.getElementById('northSeason');
+const southSeason = document.getElementById('southSeason');
+const desc = document.getElementById('desc');
+const playBtn = document.getElementById('playBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+let playing = false;
+let month = 2;
+
+function getSeason(m) {
+  if (m >= 2 && m < 5) return 'spring';
+  if (m >= 5 && m < 8) return 'summer';
+  if (m >= 8 && m < 11) return 'autumn';
+  return 'winter';
+}
+
+function opposite(s) {
+  return {spring:'autumn', summer:'winter', autumn:'spring', winter:'summer'}[s];
+}
+
+function drawStars() {
+  if (!drawStars.cache) {
+    drawStars.cache = [];
+    for (let i = 0; i < 120; i++) {
+      drawStars.cache.push({
+        x: Math.random()*W, y: Math.random()*H,
+        r: Math.random()*1.2, a: Math.random()*0.6+0.2
+      });
+    }
+  }
+  drawStars.cache.forEach(s => {
+    ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    ctx.fill();
+  });
+}
+
+function drawSun() {
+  const grad = ctx.createRadialGradient(cx, cy, 5, cx, cy, 60);
+  grad.addColorStop(0, '#fff8b0');
+  grad.addColorStop(0.3, '#ffd54f');
+  grad.addColorStop(0.7, '#ff9800');
+  grad.addColorStop(1, 'rgba(255,152,0,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 60, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(255,213,79,0.3)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 12; i++) {
+    const a = i * Math.PI/6;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a)*55, cy + Math.sin(a)*55);
+    ctx.lineTo(cx + Math.cos(a)*80, cy + Math.sin(a)*80);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('მზე', cx, cy + 5);
+}
+
+function drawOrbit() {
+  ctx.strokeStyle = 'rgba(100,150,255,0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5,5]);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 230, 180, 0, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const points = [
+    {a: Math.PI/2, label:'ივნისი\n(ზაფხული ჩრდ.)'},
+    {a: Math.PI, label:'სექტემბერი\n(შემოდგომა)'},
+    {a: 3*Math.PI/2, label:'დეკემბერი\n(ზამთარი ჩრდ.)'},
+    {a: 0, label:'მარტი\n(გაზაფხული)'}
+  ];
+  points.forEach(p => {
+    const x = cx + Math.cos(p.a)*230;
+    const y = cy + Math.sin(p.a)*180;
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(200,220,255,0.7)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    const lines = p.label.split('\n');
+    const dx = Math.cos(p.a) * 25;
+    const dy = Math.sin(p.a) * 25;
+    lines.forEach((l, i) => ctx.fillText(l, x+dx, y+dy + i*12));
+  });
+}
+
+function drawEarth(monthVal) {
+  const angle = (monthVal - 2) * (Math.PI * 2 / 12);
+  const ex = cx + Math.cos(angle) * 230;
+  const ey = cy + Math.sin(angle) * 180;
+
+  const axisTilt = -23.5 * Math.PI / 180;
+
+  // მიმართულება მზიდან დედამიწისკენ
+  const rayDir = Math.atan2(ey - cy, ex - cx);
+
+  const R = 28;
+
+  // დედამიწის სხეული
+  const earthGrad = ctx.createRadialGradient(ex-8, ey-8, 3, ex, ey, R);
+  earthGrad.addColorStop(0, '#64b5f6');
+  earthGrad.addColorStop(0.6, '#1976d2');
+  earthGrad.addColorStop(1, '#0d47a1');
+  ctx.fillStyle = earthGrad;
+  ctx.beginPath();
+  ctx.arc(ex, ey, R, 0, Math.PI*2);
+  ctx.fill();
+
+  // ეკვატორი
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ex - R, ey);
+  ctx.lineTo(ex + R, ey);
+  ctx.stroke();
+
+  // ღერძი (დახრილი)
+  ctx.strokeStyle = '#ff5252';
+  ctx.lineWidth = 2;
+  const axLen = R + 15;
+  ctx.beginPath();
+  ctx.moveTo(ex + Math.sin(axisTilt)*axLen, ey - Math.cos(axisTilt)*axLen);
+  ctx.lineTo(ex - Math.sin(axisTilt)*axLen, ey + Math.cos(axisTilt)*axLen);
+  ctx.stroke();
+
+  // ჩრდილოეთ პოლუსი
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(ex + Math.sin(axisTilt)*axLen, ey - Math.cos(axisTilt)*axLen, 3, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('N', ex + Math.sin(axisTilt)*(axLen+10), ey - Math.cos(axisTilt)*(axLen+10));
+
+  // მზის სხივები - მზიდან დედამიწისკენ
+  ctx.strokeStyle = 'rgba(255,235,59,0.7)';
+  ctx.lineWidth = 1.5;
+  
+  for (let i = -3; i <= 3; i++) {
+    const offset = i * 10;
+    // პერპენდიკულარული ოფსეტი სხივის მიმართულების მიმართ
+    const perpX = -Math.sin(rayDir) * offset;
+    const perpY = Math.cos(rayDir) * offset;
+    
+    // სხივი იწყება მზიდან (მზის რადიუსიდან)
+    const startX = cx + Math.cos(rayDir) * 65 + perpX;
+    const startY = cy + Math.sin(rayDir) * 65 + perpY;
+    
+    // სხივი მთავრდება დედამიწის ცენტრთან ახლოს
+    const endX = ex + perpX;
+    const endY = ey + perpY;
+
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+
+    // ისარი სხივის ბოლოში (მზიდან დედამიწისკენ მიმართული)
+    const arrLen = 8;
+    const arrAng = rayDir;
+    ctx.beginPath();
+    ctx.moveTo(endX, endY);
+    ctx.lineTo(endX - arrLen*Math.cos(arrAng - 0.4), endY - arrLen*Math.sin(arrAng - 0.4));
+    ctx.moveTo(endX, endY);
+    ctx.lineTo(endX - arrLen*Math.cos(arrAng + 0.4), endY - arrLen*Math.sin(arrAng + 0.4));
+    ctx.stroke();
+  }
+
+  // დაცემის კუთხის ვიზუალიზაცია
+  const nPoleX = Math.sin(axisTilt);
+  const nPoleY = -Math.cos(axisTilt);
+  const sunDirX = Math.cos(rayDir);
+  const sunDirY = Math.sin(rayDir);
+  const dot = nPoleX*sunDirX + nPoleY*sunDirY;
+  const northIncidence = Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI;
+
+  // ფერი ჩრდ./სამხ. ნახევარსფეროზე
+  ctx.save();
+  ctx.translate(ex, ey);
+  ctx.rotate(axisTilt);
+  ctx.fillStyle = northIncidence < 70 ? 'rgba(255,152,0,0.35)' : 'rgba(121,134,203,0.35)';
+  ctx.beginPath();
+  ctx.arc(0, 0, R, -Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = northIncidence < 70 ? 'rgba(121,134,203,0.35)' : 'rgba(255,152,0,0.35)';
+  ctx.beginPath();
+  ctx.arc(0, 0, R, 0, Math.PI);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('დედამიწა', ex, ey + R + 15);
+
+  return { angle, northIncidence, ex, ey };
+}
+
+function updateInfo(monthVal, northIncidence) {
+  const mInt = Math.floor(monthVal);
+  monthLabel.textContent = months[mInt];
+
+  const s = getSeason(mInt);
+  const info = seasonInfo[s];
+  seasonTitle.textContent = info.name;
+  seasonTitle.style.background = `linear-gradient(90deg, ${info.color}88, ${info.color}44)`;
+  desc.textContent = info.desc;
+
+  const orbitDeg = ((monthVal - 2) * 30 + 360) % 360;
+  posVal.textContent = orbitDeg.toFixed(1) + '°';
+
+  const orbitAngle = (monthVal - 2) * (Math.PI*2/12);
+  const declination = 23.5 * Math.sin(orbitAngle);
+  const altitudeAt45 = 90 - 45 + declination;
+  angleVal.textContent = altitudeAt45.toFixed(1) + '° (45° განედზე)';
+
+  northSeason.textContent = info.name;
+  northSeason.style.color = info.color;
+
+  const opp = opposite(s);
+  const oppInfo = seasonInfo[opp];
+  southSeason.textContent = oppInfo.name;
+  southSeason.style.color = oppInfo.color;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  drawStars();
+  drawOrbit();
+  drawSun();
+  const { northIncidence } = drawEarth(month);
+  updateInfo(month, northIncidence);
+}
+
+slider.addEventListener('input', e => {
+  month = parseFloat(e.target.value);
+  draw();
+});
+
+playBtn.addEventListener('click', () => {
+  playing = !playing;
+  playBtn.textContent = playing ? '⏸ პაუზა' : '▶ ანიმაცია';
+  if (playing) animate();
+});
+
+resetBtn.addEventListener('click', () => {
+  month = 2;
+  slider.value = 2;
+  playing = false;
+  playBtn.textContent = '▶ ანიმაცია';
+  draw();
+});
+
+function animate() {
+  if (!playing) return;
+  month += 0.02;
+  if (month >= 14) month = 2;
+  slider.value = month % 12;
+  draw();
+  requestAnimationFrame(animate);
+}
+
+draw();
+</script>
+
+</body>
+</html>
